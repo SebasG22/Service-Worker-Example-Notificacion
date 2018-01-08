@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Notify Example</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+  <div>
+    <h3 class="color">Main Content 1</h3>
+  </div>
+  <!-- The actual snackbar -->
+  <div id="snackbar">
+    New version available
+    <br> Touch here to get it
+  </div>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').then(function (reg) {
+          let installation = reg.installing;
+
+          if (!navigator.serviceWorker.controller) {
+            return;
+          }
+
+          if (reg.waiting) {
+            updateReady(reg.waiting);
+            return;
+          }
+
+          if (reg.installing) {
+            updateReady(reg.installing);
+            return;
+          }
+
+          reg.addEventListener('updatefound', function () {
+            console.log('Actualización encontrada');
+            updateReady(reg.installing);
+
+          });
+          // reg was successful
+          console.log('ServiceWorker reg successful with scope: ', reg.scope);
+        }).catch(function (err) {
+          // reg failed :(
+
+          console.log('ServiceWorker reg failed: ', err);
+        });
+      });
+
+      function updateReady(worker) {
+        if (worker.state == 'installed') {
+          console.log('New version Available');
+          showToast();
+          sendSkipWaiting(worker);
+        }
+        worker.addEventListener('statechange', () => {
+          console.log('Escuchando cambios');
+          switch (worker.state) {
+            case 'installed':
+              console.log('New version Available');
+              showToast();
+              sendSkipWaiting(worker);
+          }
+        });
+      }
+    }
+
+    function showToast() {
+      const x = document.getElementById("snackbar")
+      x.className = "show";
+    }
+
+    function sendSkipWaiting(worker){
+      const x = document.getElementById("snackbar")
+      x.addEventListener('click', () => {
+        worker.postMessage({ action: 'skipWaiting' });
+        window.location.reload();
+      });
+    }
+  </script>
+</body>
+
+</html>
